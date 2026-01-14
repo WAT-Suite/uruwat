@@ -2,10 +2,9 @@
 Data models for the War Track Dashboard API.
 """
 
-from datetime import date
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class Country(str, Enum):

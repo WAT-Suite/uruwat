@@ -1,7 +1,6 @@
 """Unit tests for the Client class."""
 
 import pytest
-import respx
 from httpx import Response
 
 from uruwat import Client, Country, EquipmentType, Status
@@ -321,12 +320,10 @@ class TestClientErrorHandling:
 
         assert exc_info.value.status_code == 500
 
-    def test_request_error(self, mock_api):
+    def test_request_error(self):
         """Test request error handling."""
-        # Simulate network error
-        mock_api.post("/api/stats/equipments/ukraine").mock(side_effect=Exception("Network error"))
-
-        client = Client(base_url="http://test-api.example.com")
+        # Use a non-existent URL to trigger a RequestError
+        client = Client(base_url="http://nonexistent-domain-12345.example.com", timeout=1.0)
         with pytest.raises(WarTrackAPIError) as exc_info:
             client.get_equipments(country=Country.UKRAINE)
 

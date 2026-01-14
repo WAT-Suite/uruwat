@@ -3,7 +3,7 @@ Main client class for the War Track Dashboard API.
 """
 
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -80,7 +80,7 @@ class Client:
         endpoint: str,
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | list[Any]:
         """
         Make an HTTP request to the API.
 
@@ -91,7 +91,7 @@ class Client:
             json: JSON body for POST requests
 
         Returns:
-            Response data as dictionary
+            Response data as dictionary or list
 
         Raises:
             WarTrackAPIError: Base exception for API errors
@@ -109,7 +109,8 @@ class Client:
                 json=json,
             )
             response.raise_for_status()
-            return response.json()
+            # response.json() returns Any, but we know it's either dict or list
+            return cast(dict[str, Any] | list[Any], response.json())
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
             try:
@@ -213,7 +214,9 @@ class Client:
 
         json_body = request_body if request_body else None
         data = self._request("POST", f"/api/stats/equipments/{country.value}", json=json_body)
-        return [Equipment(**item) for item in data]
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [Equipment(**item) for item in data if isinstance(item, dict)]
 
     def get_total_equipments(
         self,
@@ -249,7 +252,9 @@ class Client:
 
         json_body = request_body if request_body else None
         data = self._request("POST", "/api/stats/equipments", json=json_body)
-        return [AllEquipment(**item) for item in data]
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [AllEquipment(**item) for item in data if isinstance(item, dict)]
 
     def get_equipment_types(self) -> list[dict[str, str]]:
         """
@@ -329,7 +334,9 @@ class Client:
 
         json_body = request_body if request_body else None
         data = self._request("POST", f"/api/stats/systems/{country.value}", json=json_body)
-        return [System(**item) for item in data]
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [System(**item) for item in data if isinstance(item, dict)]
 
     def get_total_systems(
         self,
@@ -365,7 +372,9 @@ class Client:
 
         json_body = request_body if request_body else None
         data = self._request("POST", "/api/stats/systems", json=json_body)
-        return [AllSystem(**item) for item in data]
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [AllSystem(**item) for item in data if isinstance(item, dict)]
 
     def get_system_types(self) -> list[dict[str, str]]:
         """
@@ -400,7 +409,10 @@ class Client:
             result = client.import_equipments()
             ```
         """
-        return self._request("POST", "/api/import/equipments")
+        data = self._request("POST", "/api/import/equipments")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
 
     def import_all_equipments(self) -> dict[str, str]:
         """
@@ -417,7 +429,10 @@ class Client:
             result = client.import_all_equipments()
             ```
         """
-        return self._request("POST", "/api/import/all-equipments")
+        data = self._request("POST", "/api/import/all-equipments")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
 
     def import_systems(self) -> dict[str, str]:
         """
@@ -434,7 +449,10 @@ class Client:
             result = client.import_systems()
             ```
         """
-        return self._request("POST", "/api/import/systems")
+        data = self._request("POST", "/api/import/systems")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
 
     def import_all_systems(self) -> dict[str, str]:
         """
@@ -451,7 +469,10 @@ class Client:
             result = client.import_all_systems()
             ```
         """
-        return self._request("POST", "/api/import/all-systems")
+        data = self._request("POST", "/api/import/all-systems")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
 
     def import_all(self) -> dict[str, str]:
         """
@@ -468,7 +489,10 @@ class Client:
             result = client.import_all()
             ```
         """
-        return self._request("POST", "/api/import/all")
+        data = self._request("POST", "/api/import/all")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
 
     def health_check(self) -> dict[str, str]:
         """
@@ -485,4 +509,7 @@ class Client:
             health = client.health_check()
             ```
         """
-        return self._request("GET", "/health")
+        data = self._request("GET", "/health")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
