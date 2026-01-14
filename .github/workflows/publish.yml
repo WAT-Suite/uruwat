@@ -28,11 +28,6 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for version detection
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          version: "latest"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -56,7 +51,7 @@ jobs:
 
       - name: Verify version matches pyproject.toml
         run: |
-          uv pip install tomli
+          pip install tomli
           PYPROJECT_VERSION=$(python -c "import tomli; print(tomli.load(open('pyproject.toml', 'rb'))['project']['version'])")
           TAG_VERSION="${{ steps.tag_version.outputs.version }}"
           if [ "$PYPROJECT_VERSION" != "$TAG_VERSION" ]; then
@@ -69,15 +64,14 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          uv sync --dev
+          python -m pip install --upgrade pip
+          pip install build twine
 
       - name: Build package
-        run: |
-          uv run python -m build
+        run: python -m build
 
       - name: Check package
-        run: |
-          uv run pip install twine && uv run twine check dist/*
+        run: twine check dist/*
 
       - name: Check if pre-release
         id: check_prerelease
@@ -103,8 +97,7 @@ jobs:
       # Option 2: Using API Token (Alternative)
       # Uncomment below and comment out the above step if using API token
       # - name: Publish to PyPI
-      #   if: steps.check_prerelease.outputs.skip == 'false'
       #   env:
       #     TWINE_USERNAME: __token__
       #     TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      #   run: uv run twine upload dist/* --verbose
+      #   run: twine upload dist/* --verbose

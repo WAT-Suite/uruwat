@@ -2,9 +2,14 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/uruwat.svg)](https://pypi.org/project/uruwat/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/uruwat.svg)](https://pypi.org/project/uruwat/)
+[![Python versions](https://img.shields.io/pypi/pyversions/uruwat.svg)](https://pypi.org/project/uruwat/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/wat-suite/uruwat/workflows/CI/badge.svg)](https://github.com/wat-suite/uruwat/actions)
 [![codecov](https://codecov.io/gh/wat-suite/uruwat/branch/main/graph/badge.svg)](https://codecov.io/gh/wat-suite/uruwat)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![mypy](https://img.shields.io/badge/mypy-checked-blue.svg)](http://mypy-lang.org/)
+[![GitHub stars](https://img.shields.io/github/stars/wat-suite/uruwat.svg?style=social&label=Star)](https://github.com/wat-suite/uruwat)
 
 Python client wrapper for the War Track Dashboard API. This library provides a type-safe, async-compatible interface for interacting with the War Track Dashboard API, making it easy to query equipment and system data.
 
