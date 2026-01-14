@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-12-19
+
+### Added
+- Async client support (`AsyncClient`) with async/await methods
+- Async tests for all async client methods
+- Support for async context managers
+
+### Changed
+- Improved type annotations and type safety
+
+[Unreleased]: https://github.com/WAT-Suite/uruwat/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/WAT-Suite/uruwat/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/WAT-Suite/uruwat/releases/tag/v0.1.0
+
 ## [0.1.0] - 2024-01-XX
 
 ### Added
@@ -30,6 +44,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed type checking issues with proper type narrowing
 - Fixed linting issues (unused imports, ruff config)
 - Fixed test failures with proper error handling
-
-[Unreleased]: https://github.com/wat-suite/uruwat/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/wat-suite/uruwat/releases/tag/v0.1.0

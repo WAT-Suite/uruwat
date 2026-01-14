@@ -1,6 +1,6 @@
 [project]
 name = "uruwat"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python client wrapper for the War Track Dashboard API"
 readme = "README.md"
 requires-python = ">=3.10"
