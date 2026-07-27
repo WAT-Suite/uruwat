@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-26
+
+### Added
+- `import_historical()` on both `Client` and `AsyncClient`, covering the API's
+  `POST /api/import/historical` endpoint — a full re-import that ignores dates
+  already stored, unlike `import_all()` which only picks up missing dates
+- Test coverage for every async import method; the async client's import
+  methods previously had none
+
 ## [0.2.0] - 2026-01-14
 
 ### Added

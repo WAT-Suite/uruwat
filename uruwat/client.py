@@ -494,6 +494,29 @@ class Client:
             raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
         return data
 
+    def import_historical(self) -> dict[str, str]:
+        """
+        Trigger a full re-import, ignoring dates already in the database.
+
+        Unlike :meth:`import_all`, which only picks up dates the API does not
+        yet have, this re-imports everything the scraper returns.
+
+        Returns:
+            Response message
+
+        Example:
+            ```python
+            from uruwat import Client
+
+            client = Client()
+            result = client.import_historical()
+            ```
+        """
+        data = self._request("POST", "/api/import/historical")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
+
     def health_check(self) -> dict[str, str]:
         """
         Check API health status.

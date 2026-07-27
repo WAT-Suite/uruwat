@@ -221,7 +221,14 @@ Trigger import of all system totals from scraper.
 
 ##### `import_all()`
 
-Trigger import of all data from scraper.
+Trigger import of all data from scraper. Only imports dates the API does not
+already have.
+
+**Returns:** `dict[str, str]`
+
+##### `import_historical()`
+
+Trigger a full re-import, ignoring dates already stored.
 
 **Returns:** `dict[str, str]`
 

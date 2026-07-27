@@ -243,6 +243,17 @@ class TestClientImport:
 
         assert result["message"] == "All data imported successfully"
 
+    def test_import_historical(self, mock_api):
+        """Test the full re-import, which ignores dates already stored."""
+        mock_api.post("/api/import/historical").mock(
+            return_value=Response(200, json={"message": "Historical data imported successfully"})
+        )
+
+        client = Client(base_url="http://test-api.example.com")
+        result = client.import_historical()
+
+        assert result["message"] == "Historical data imported successfully"
+
 
 @pytest.mark.unit
 class TestClientHealth:

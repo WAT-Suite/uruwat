@@ -166,3 +166,37 @@ class TestAsyncClientRequests:
             client._client = mock_httpx_async_client
             with pytest.raises(WarTrackAuthenticationError):
                 await client.health_check()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+class TestAsyncClientImports:
+    """Test the import-trigger methods, which had no async coverage."""
+
+    @pytest.mark.parametrize(
+        ("method", "endpoint"),
+        [
+            ("import_equipments", "/api/import/equipments"),
+            ("import_all_equipments", "/api/import/all-equipments"),
+            ("import_systems", "/api/import/systems"),
+            ("import_all_systems", "/api/import/all-systems"),
+            ("import_all", "/api/import/all"),
+            ("import_historical", "/api/import/historical"),
+        ],
+    )
+    async def test_import_posts_to_expected_endpoint(
+        self, mock_httpx_async_client, method, endpoint
+    ):
+        """Each import method POSTs to its own endpoint and returns the message."""
+        mock_response = Mock()
+        mock_response.json.return_value = {"message": "imported successfully"}
+        mock_response.raise_for_status = Mock()
+        mock_httpx_async_client.request = AsyncMock(return_value=mock_response)
+
+        async with AsyncClient() as client:
+            client._client = mock_httpx_async_client
+            result = await getattr(client, method)()
+
+        assert result["message"] == "imported successfully"
+        assert mock_httpx_async_client.request.await_args.kwargs["method"] == "POST"
+        assert mock_httpx_async_client.request.await_args.kwargs["url"] == endpoint

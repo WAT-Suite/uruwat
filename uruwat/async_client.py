@@ -400,6 +400,21 @@ class AsyncClient:
             raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
         return data
 
+    async def import_historical(self) -> dict[str, str]:
+        """
+        Trigger a full re-import, ignoring dates already in the database.
+
+        Unlike :meth:`import_all`, which only picks up dates the API does not
+        yet have, this re-imports everything the scraper returns.
+
+        Returns:
+            Response message
+        """
+        data = await self._request("POST", "/api/import/historical")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
+
     async def health_check(self) -> dict[str, str]:
         """
         Check API health status.
