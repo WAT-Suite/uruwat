@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-26
+
+### Added
+- Daily historical loss series support, covering the API's new endpoints:
+  `get_daily_losses()`, `get_daily_loss_series()`, `get_daily_loss_metrics()`
+  and `import_daily_losses()`, on both `Client` and `AsyncClient`
+- `DailyLoss`, `DailyLossPoint`, `DailyLossSeries` models and the
+  `DailyLossMetric` enum
+- This series runs back to 2022-02-24; the Oryx-derived equipment and system
+  endpoints only accumulate dates going forward, so it is the one to chart
+  history against
+
 ## [0.3.0] - 2026-07-26
 
 ### Added

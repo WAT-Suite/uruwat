@@ -146,3 +146,71 @@ class SystemTypesResponse(BaseModel):
         """Pydantic config."""
 
         frozen = True
+
+
+class DailyLossMetric(str, Enum):
+    """
+    Metrics in the daily historical time series.
+
+    These come from the maintained Google Sheet, whose vocabulary is its own and
+    deliberately separate from :class:`EquipmentType`: several sheet columns are
+    roll-ups (``ARMOR``) or ambiguous against Oryx's categories (``ANTIAIR``
+    spans both anti-aircraft guns and SAM systems).
+    """
+
+    # Country-wide aggregates
+    TOTAL = "total"
+    CHANGE = "change"
+    DESTROYED = "destroyed"
+    DAMAGED = "damaged"
+    ABANDONED = "abandoned"
+    CAPTURED = "captured"
+
+    # Equipment categories
+    TANKS = "tanks"
+    TANK_CAPTURE = "tank_capture"
+    AFV = "afv"
+    AFV_CAPTURE = "afv_capture"
+    IFV = "ifv"
+    APC = "apc"
+    IMV = "imv"
+    ENGINEERING = "engineering"
+    COMS = "coms"
+    VEHICLES = "vehicles"
+    AIRCRAFT = "aircraft"
+    INFANTRY = "infantry"
+    LOGISTICS = "logistics"
+    ARMOR = "armor"
+    ANTIAIR = "antiair"
+    ARTILLERY = "artillery"
+
+    # Not attributable to one side; served under country "all"
+    RATIO_RU_UA = "ratio_ru_ua"
+    UNHCR_UKRAINE_BORDER = "unhcr_ukraine_border"
+    UNHCR_UKRAINE_REFUGEES = "unhcr_ukraine_refugees"
+    UNHCR_RETURNING_UKRAINE_REFUGEES = "unhcr_returning_ukraine_refugees"
+
+
+class DailyLoss(BaseModel):
+    """One metric, for one country, on one day."""
+
+    id: int
+    country: str
+    date: str
+    metric: str
+    value: float
+
+
+class DailyLossPoint(BaseModel):
+    """A single point in a daily loss series."""
+
+    date: str
+    value: float
+
+
+class DailyLossSeries(BaseModel):
+    """One metric's values over time, ready to plot without regrouping."""
+
+    country: str
+    metric: str
+    points: list[DailyLossPoint]

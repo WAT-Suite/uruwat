@@ -7,6 +7,7 @@ from typing import Any, cast
 
 import httpx
 
+from uruwat.client import _as_date_string
 from uruwat.exceptions import (
     WarTrackAPIError,
     WarTrackAuthenticationError,
@@ -19,6 +20,9 @@ from uruwat.models import (
     AllEquipment,
     AllSystem,
     Country,
+    DailyLoss,
+    DailyLossMetric,
+    DailyLossSeries,
     Equipment,
     EquipmentType,
     Status,
@@ -411,6 +415,101 @@ class AsyncClient:
             Response message
         """
         data = await self._request("POST", "/api/import/historical")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
+
+    def _daily_loss_body(
+        self,
+        metrics: list[DailyLossMetric] | None = None,
+        date_start: date | str | None = None,
+        date_end: date | str | None = None,
+    ) -> dict[str, Any]:
+        """Build the request body shared by the daily loss endpoints."""
+        body: dict[str, Any] = {}
+        if metrics:
+            body["metrics"] = [m.value for m in metrics]
+        if date_start or date_end:
+            body["date"] = [_as_date_string(date_start), _as_date_string(date_end)]
+        return body
+
+    async def get_daily_losses(
+        self,
+        country: Country = Country.ALL,
+        metrics: list[DailyLossMetric] | None = None,
+        date_start: date | str | None = None,
+        date_end: date | str | None = None,
+    ) -> list[DailyLoss]:
+        """
+        Get raw rows of the daily historical loss series.
+
+        This series runs back to 2022-02-24, unlike the Oryx-derived equipment
+        and system endpoints which only accumulate dates going forward.
+
+        Args:
+            country: Country filter; ``Country.ALL`` (default) returns every side
+            metrics: Optional list of metrics to filter
+            date_start: Optional start date (YYYY-MM-DD format or date object)
+            date_end: Optional end date (YYYY-MM-DD format or date object)
+
+        Returns:
+            List of DailyLoss objects
+        """
+        body = self._daily_loss_body(metrics, date_start, date_end)
+        data = await self._request(
+            "POST", f"/api/stats/daily-losses/{country.value}", json=body or None
+        )
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [DailyLoss(**item) for item in data]
+
+    async def get_daily_loss_series(
+        self,
+        country: Country = Country.ALL,
+        metrics: list[DailyLossMetric] | None = None,
+        date_start: date | str | None = None,
+        date_end: date | str | None = None,
+    ) -> list[DailyLossSeries]:
+        """
+        Get the daily series already grouped into one entry per country/metric.
+
+        Args:
+            country: Country filter; ``Country.ALL`` (default) returns every side
+            metrics: Optional list of metrics to filter
+            date_start: Optional start date (YYYY-MM-DD format or date object)
+            date_end: Optional end date (YYYY-MM-DD format or date object)
+
+        Returns:
+            List of DailyLossSeries objects, each with date-ordered points
+        """
+        body = self._daily_loss_body(metrics, date_start, date_end)
+        data = await self._request(
+            "POST", f"/api/stats/daily-losses/{country.value}/series", json=body or None
+        )
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [DailyLossSeries(**item) for item in data]
+
+    async def get_daily_loss_metrics(self) -> list[dict[str, str]]:
+        """
+        Get the metrics present in the daily series.
+
+        Returns:
+            List of dictionaries with a ``metric`` key
+        """
+        data = await self._request("GET", "/api/stats/daily-loss-metrics")
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return data
+
+    async def import_daily_losses(self) -> dict[str, str]:
+        """
+        Trigger import of the daily series from the Google Sheet.
+
+        Returns:
+            Response message
+        """
+        data = await self._request("POST", "/api/import/daily-losses")
         if not isinstance(data, dict):
             raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
         return data

@@ -182,6 +182,7 @@ class TestAsyncClientImports:
             ("import_all_systems", "/api/import/all-systems"),
             ("import_all", "/api/import/all"),
             ("import_historical", "/api/import/historical"),
+            ("import_daily_losses", "/api/import/daily-losses"),
         ],
     )
     async def test_import_posts_to_expected_endpoint(
@@ -200,3 +201,99 @@ class TestAsyncClientImports:
         assert result["message"] == "imported successfully"
         assert mock_httpx_async_client.request.await_args.kwargs["method"] == "POST"
         assert mock_httpx_async_client.request.await_args.kwargs["url"] == endpoint
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+class TestAsyncClientDailyLosses:
+    """The daily historical series, async side."""
+
+    async def test_get_daily_losses(self, mock_httpx_async_client):
+        mock_response = Mock()
+        mock_response.json.return_value = [
+            {
+                "id": 1,
+                "country": "russia",
+                "date": "2022-02-24",
+                "metric": "tanks",
+                "value": 5.0,
+            }
+        ]
+        mock_response.raise_for_status = Mock()
+        mock_httpx_async_client.request = AsyncMock(return_value=mock_response)
+
+        async with AsyncClient() as client:
+            client._client = mock_httpx_async_client
+            rows = await client.get_daily_losses(country=Country.RUSSIA)
+
+        assert len(rows) == 1
+        assert rows[0].metric == "tanks"
+        assert mock_httpx_async_client.request.await_args.kwargs["url"] == (
+            "/api/stats/daily-losses/russia"
+        )
+
+    async def test_defaults_to_all_countries(self, mock_httpx_async_client):
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_httpx_async_client.request = AsyncMock(return_value=mock_response)
+
+        async with AsyncClient() as client:
+            client._client = mock_httpx_async_client
+            await client.get_daily_losses()
+
+        assert mock_httpx_async_client.request.await_args.kwargs["url"] == (
+            "/api/stats/daily-losses/all"
+        )
+
+    async def test_sends_metrics_and_date_range(self, mock_httpx_async_client):
+        from uruwat import DailyLossMetric
+
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_httpx_async_client.request = AsyncMock(return_value=mock_response)
+
+        async with AsyncClient() as client:
+            client._client = mock_httpx_async_client
+            await client.get_daily_losses(
+                country=Country.RUSSIA,
+                metrics=[DailyLossMetric.TANKS],
+                date_start="2022-02-24",
+                date_end="2022-03-01",
+            )
+
+        body = mock_httpx_async_client.request.await_args.kwargs["json"]
+        assert body["metrics"] == ["tanks"]
+        assert body["date"] == ["2022-02-24", "2022-03-01"]
+
+    async def test_get_daily_loss_series(self, mock_httpx_async_client):
+        mock_response = Mock()
+        mock_response.json.return_value = [
+            {
+                "country": "russia",
+                "metric": "tanks",
+                "points": [{"date": "2022-02-24", "value": 5.0}],
+            }
+        ]
+        mock_response.raise_for_status = Mock()
+        mock_httpx_async_client.request = AsyncMock(return_value=mock_response)
+
+        async with AsyncClient() as client:
+            client._client = mock_httpx_async_client
+            series = await client.get_daily_loss_series(country=Country.RUSSIA)
+
+        assert series[0].points[0].value == 5.0
+        assert mock_httpx_async_client.request.await_args.kwargs["url"].endswith("/series")
+
+    async def test_get_daily_loss_metrics(self, mock_httpx_async_client):
+        mock_response = Mock()
+        mock_response.json.return_value = [{"metric": "tanks"}]
+        mock_response.raise_for_status = Mock()
+        mock_httpx_async_client.request = AsyncMock(return_value=mock_response)
+
+        async with AsyncClient() as client:
+            client._client = mock_httpx_async_client
+            metrics = await client.get_daily_loss_metrics()
+
+        assert metrics == [{"metric": "tanks"}]

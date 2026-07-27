@@ -1,9 +1,12 @@
 """Unit tests for the Client class."""
 
+import json
+from datetime import date
+
 import pytest
 from httpx import Response
 
-from uruwat import Client, Country, EquipmentType, Status
+from uruwat import Client, Country, DailyLossMetric, EquipmentType, Status
 from uruwat.exceptions import (
     WarTrackAPIError,
     WarTrackAuthenticationError,
@@ -339,3 +342,104 @@ class TestClientErrorHandling:
             client.get_equipments(country=Country.UKRAINE)
 
         assert "Request failed" in str(exc_info.value)
+
+
+@pytest.mark.unit
+class TestClientDailyLosses:
+    """
+    The daily historical series - the only endpoint group with real history.
+
+    Oryx is a dateless snapshot, so equipment/system endpoints only accumulate
+    dates going forward; this series runs back to 2022-02-24.
+    """
+
+    def test_get_daily_losses(self, mock_api):
+        mock_api.post("/api/stats/daily-losses/russia").mock(
+            return_value=Response(
+                200,
+                json=[
+                    {
+                        "id": 1,
+                        "country": "russia",
+                        "date": "2022-02-24",
+                        "metric": "tanks",
+                        "value": 5.0,
+                    }
+                ],
+            )
+        )
+
+        client = Client(base_url="http://test-api.example.com")
+        rows = client.get_daily_losses(country=Country.RUSSIA, metrics=[DailyLossMetric.TANKS])
+
+        assert len(rows) == 1
+        assert rows[0].metric == "tanks"
+        assert rows[0].value == 5.0
+
+    def test_get_daily_losses_defaults_to_all_countries(self, mock_api):
+        route = mock_api.post("/api/stats/daily-losses/all").mock(
+            return_value=Response(200, json=[])
+        )
+
+        client = Client(base_url="http://test-api.example.com")
+        assert client.get_daily_losses() == []
+        assert route.called
+
+    def test_get_daily_losses_sends_metrics_and_date_range(self, mock_api):
+        route = mock_api.post("/api/stats/daily-losses/russia").mock(
+            return_value=Response(200, json=[])
+        )
+
+        client = Client(base_url="http://test-api.example.com")
+        client.get_daily_losses(
+            country=Country.RUSSIA,
+            metrics=[DailyLossMetric.TANKS, DailyLossMetric.AIRCRAFT],
+            date_start=date(2022, 2, 24),
+            date_end="2022-03-01",
+        )
+
+        body = json.loads(route.calls[0].request.content)
+        assert body["metrics"] == ["tanks", "aircraft"]
+        assert body["date"] == ["2022-02-24", "2022-03-01"]
+
+    def test_get_daily_loss_series(self, mock_api):
+        mock_api.post("/api/stats/daily-losses/russia/series").mock(
+            return_value=Response(
+                200,
+                json=[
+                    {
+                        "country": "russia",
+                        "metric": "tanks",
+                        "points": [
+                            {"date": "2022-02-24", "value": 5.0},
+                            {"date": "2022-02-25", "value": 12.0},
+                        ],
+                    }
+                ],
+            )
+        )
+
+        client = Client(base_url="http://test-api.example.com")
+        series = client.get_daily_loss_series(country=Country.RUSSIA)
+
+        assert len(series) == 1
+        assert series[0].metric == "tanks"
+        assert [p.value for p in series[0].points] == [5.0, 12.0]
+
+    def test_get_daily_loss_metrics(self, mock_api):
+        mock_api.get("/api/stats/daily-loss-metrics").mock(
+            return_value=Response(200, json=[{"metric": "tanks"}, {"metric": "total"}])
+        )
+
+        client = Client(base_url="http://test-api.example.com")
+        assert client.get_daily_loss_metrics() == [{"metric": "tanks"}, {"metric": "total"}]
+
+    def test_import_daily_losses(self, mock_api):
+        mock_api.post("/api/import/daily-losses").mock(
+            return_value=Response(200, json={"message": "Daily loss data imported successfully"})
+        )
+
+        client = Client(base_url="http://test-api.example.com")
+        result = client.import_daily_losses()
+
+        assert "successfully" in result["message"]

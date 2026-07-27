@@ -19,11 +19,21 @@ from uruwat.models import (
     AllEquipment,
     AllSystem,
     Country,
+    DailyLoss,
+    DailyLossMetric,
+    DailyLossSeries,
     Equipment,
     EquipmentType,
     Status,
     System,
 )
+
+
+def _as_date_string(value: date | str | None) -> str:
+    """Render a date bound for the API's two-element date range."""
+    if value is None:
+        return ""
+    return value.strftime("%Y-%m-%d") if isinstance(value, date) else value
 
 
 class Client:
@@ -513,6 +523,129 @@ class Client:
             ```
         """
         data = self._request("POST", "/api/import/historical")
+        if not isinstance(data, dict):
+            raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
+        return data
+
+    def _daily_loss_body(
+        self,
+        metrics: list[DailyLossMetric] | None = None,
+        date_start: date | str | None = None,
+        date_end: date | str | None = None,
+    ) -> dict[str, Any]:
+        """Build the request body shared by the daily loss endpoints."""
+        body: dict[str, Any] = {}
+        if metrics:
+            body["metrics"] = [m.value for m in metrics]
+        if date_start or date_end:
+            body["date"] = [_as_date_string(date_start), _as_date_string(date_end)]
+        return body
+
+    def get_daily_losses(
+        self,
+        country: Country = Country.ALL,
+        metrics: list[DailyLossMetric] | None = None,
+        date_start: date | str | None = None,
+        date_end: date | str | None = None,
+    ) -> list[DailyLoss]:
+        """
+        Get raw rows of the daily historical loss series.
+
+        This series runs back to 2022-02-24. The equipment and system endpoints
+        are Oryx-derived and only accumulate dates going forward, so this is the
+        one to chart history against.
+
+        Args:
+            country: Country filter; ``Country.ALL`` (default) returns every side
+            metrics: Optional list of metrics to filter
+            date_start: Optional start date (YYYY-MM-DD format or date object)
+            date_end: Optional end date (YYYY-MM-DD format or date object)
+
+        Returns:
+            List of DailyLoss objects
+
+        Example:
+            ```python
+            from uruwat import Client, Country, DailyLossMetric
+
+            client = Client()
+            rows = client.get_daily_losses(
+                country=Country.RUSSIA,
+                metrics=[DailyLossMetric.TANKS],
+                date_start="2022-02-24",
+            )
+            ```
+        """
+        body = self._daily_loss_body(metrics, date_start, date_end)
+        data = self._request("POST", f"/api/stats/daily-losses/{country.value}", json=body or None)
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [DailyLoss(**item) for item in data]
+
+    def get_daily_loss_series(
+        self,
+        country: Country = Country.ALL,
+        metrics: list[DailyLossMetric] | None = None,
+        date_start: date | str | None = None,
+        date_end: date | str | None = None,
+    ) -> list[DailyLossSeries]:
+        """
+        Get the daily series already grouped into one entry per country/metric.
+
+        The same data as :meth:`get_daily_losses`, shaped so it can be plotted
+        without regrouping.
+
+        Args:
+            country: Country filter; ``Country.ALL`` (default) returns every side
+            metrics: Optional list of metrics to filter
+            date_start: Optional start date (YYYY-MM-DD format or date object)
+            date_end: Optional end date (YYYY-MM-DD format or date object)
+
+        Returns:
+            List of DailyLossSeries objects, each with date-ordered points
+
+        Example:
+            ```python
+            from uruwat import Client, Country, DailyLossMetric
+
+            client = Client()
+            for series in client.get_daily_loss_series(
+                country=Country.RUSSIA, metrics=[DailyLossMetric.TANKS]
+            ):
+                print(series.metric, len(series.points))
+            ```
+        """
+        body = self._daily_loss_body(metrics, date_start, date_end)
+        data = self._request(
+            "POST", f"/api/stats/daily-losses/{country.value}/series", json=body or None
+        )
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return [DailyLossSeries(**item) for item in data]
+
+    def get_daily_loss_metrics(self) -> list[dict[str, str]]:
+        """
+        Get the metrics present in the daily series.
+
+        Returns:
+            List of dictionaries with a ``metric`` key
+        """
+        data = self._request("GET", "/api/stats/daily-loss-metrics")
+        if not isinstance(data, list):
+            raise WarTrackAPIError(f"Expected list, got {type(data).__name__}")
+        return data
+
+    def import_daily_losses(self) -> dict[str, str]:
+        """
+        Trigger import of the daily series from the Google Sheet.
+
+        Only imports dates the API does not already have; use
+        :meth:`import_historical` to re-import everything.
+
+        Returns:
+            Response message
+        """
+        data = self._request("POST", "/api/import/daily-losses")
         if not isinstance(data, dict):
             raise WarTrackAPIError(f"Expected dict, got {type(data).__name__}")
         return data

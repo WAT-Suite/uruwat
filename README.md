@@ -232,6 +232,55 @@ Trigger a full re-import, ignoring dates already stored.
 
 **Returns:** `dict[str, str]`
 
+##### `import_daily_losses()`
+
+Trigger import of the daily historical series from the Google Sheet.
+
+**Returns:** `dict[str, str]`
+
+### Daily historical series
+
+The equipment and system endpoints are Oryx-derived. Oryx publishes a running
+snapshot with no per-loss date, so those tables only accumulate dates going
+forward. The daily series comes from a maintained spreadsheet and runs back to
+**2022-02-24** — it is the one to chart history against.
+
+```python
+from uruwat import Client, Country, DailyLossMetric
+
+client = Client()
+
+# Plot-ready: one series per country/metric, points already date-ordered
+for series in client.get_daily_loss_series(
+    country=Country.RUSSIA,
+    metrics=[DailyLossMetric.TANKS, DailyLossMetric.AIRCRAFT],
+    date_start="2022-02-24",
+):
+    print(series.metric, len(series.points))
+
+# Or the raw rows
+rows = client.get_daily_losses(country=Country.RUSSIA)
+
+# What metrics are available?
+metrics = client.get_daily_loss_metrics()
+```
+
+`Country.ALL` (the default) returns every side. Metrics belonging to no single
+side — `RATIO_RU_UA` and the UNHCR refugee figures — are served under country
+`all`.
+
+##### `get_daily_losses(country=Country.ALL, metrics=None, date_start=None, date_end=None)`
+
+**Returns:** `list[DailyLoss]`
+
+##### `get_daily_loss_series(country=Country.ALL, metrics=None, date_start=None, date_end=None)`
+
+**Returns:** `list[DailyLossSeries]`
+
+##### `get_daily_loss_metrics()`
+
+**Returns:** `list[dict[str, str]]`
+
 ##### `health_check()`
 
 Check API health status.

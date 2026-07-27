@@ -16,13 +16,17 @@ from uruwat.models import (
     AllEquipment,
     AllSystem,
     Country,
+    DailyLoss,
+    DailyLossMetric,
+    DailyLossPoint,
+    DailyLossSeries,
     Equipment,
     EquipmentType,
     Status,
     System,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "Client",
@@ -40,4 +44,8 @@ __all__ = [
     "AllEquipment",
     "System",
     "AllSystem",
+    "DailyLoss",
+    "DailyLossMetric",
+    "DailyLossPoint",
+    "DailyLossSeries",
 ]
